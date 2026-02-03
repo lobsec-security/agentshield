@@ -17,7 +17,9 @@ import checkRouter from './routes/check';
 import validateTxRouter from './routes/validate-tx';
 import threatsRouter from './routes/threats';
 import statusRouter from './routes/status';
+import scoreRouter from './routes/score';
 import { SCAM_ADDRESSES } from './data/scam-addresses';
+import { initRegistry, getRegistryStats } from './solana/threat-registry';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -53,7 +55,11 @@ app.use('/api/scan', scanLimiter, scanRouter);
 app.use('/api/check', checkRouter);
 app.use('/api/validate-tx', validateTxRouter);
 app.use('/api/threats', threatsRouter);
+app.use('/api/score', scoreRouter);
 app.use('/api/status', statusRouter);
+
+// Initialize Solana threat registry
+const registry = initRegistry();
 
 // Root redirect to status
 app.get('/', (_req, res) => {
@@ -94,6 +100,18 @@ app.get('/api', (_req, res) => {
         description: 'Get recent threat intelligence',
         params: '?since=<ISO timestamp>&limit=<n>',
         response: '{ "threats": [...], "count": number }',
+      },
+      {
+        method: 'POST',
+        path: '/api/score',
+        description: 'Score an AI agent\'s security posture (0-100, A+ to F grade)',
+        body: '{ "name": "...", "codeUrl?": "...", "walletAddress?": "...", "skills?": [...], "description?": "...", "code?": "..." }',
+        response: '{ "agent": "...", "overallScore": 0-100, "grade": "A+"-"F", "dimensions": {...}, "flags": [...] }',
+      },
+      {
+        method: 'GET',
+        path: '/api/score/leaderboard',
+        description: 'Agent security leaderboard (top scored agents)',
       },
       {
         method: 'GET',
@@ -137,7 +155,10 @@ app.listen(PORT, () => {
   ║  POST /api/validate-tx   Transaction validation          ║
   ║  GET  /api/threats       Threat intel feed               ║
   ║  GET  /api/status        Health check                    ║
+  ║  POST /api/score         Agent security scoring           ║
   ║  GET  /api               API documentation               ║
+  ╠═══════════════════════════════════════════════════════════╣
+  ║  Solana Registry: ${String(registry.enabled ? '✅ ' + registry.address.slice(0, 20) + '...' : '⚠️  Not funded (devnet)').padEnd(38)}║
   ╚═══════════════════════════════════════════════════════════╝
   `);
 });
