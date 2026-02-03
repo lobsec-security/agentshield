@@ -5,7 +5,9 @@
 import { Router, Request, Response } from 'express';
 import { scanCode } from '../scanners/code-scanner';
 import { threatStore } from '../data/threat-store';
+import { writeThreatToChain } from '../solana/threat-registry';
 import fetch from 'node-fetch';
+import * as crypto from 'crypto';
 
 const router = Router();
 
@@ -91,18 +93,34 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Log threat if dangerous
     if (result.riskScore >= 50) {
+      const severity = result.riskScore >= 80 ? 'critical' : result.riskScore >= 50 ? 'high' : 'medium';
+      const categories = [...new Set(result.detections.map(d => d.category))];
+      
       threatStore.addThreat({
         type: 'scan_detection',
-        severity: result.riskScore >= 80 ? 'critical' : result.riskScore >= 50 ? 'high' : 'medium',
+        severity,
         title: `Dangerous code detected (score: ${result.riskScore})`,
         description: result.summary,
         metadata: {
           source,
           riskScore: result.riskScore,
           detectionCount: result.detections.length,
-          categories: [...new Set(result.detections.map(d => d.category))],
+          categories,
         },
       });
+      
+      // Write critical threats to Solana devnet (async, don't block response)
+      if (result.riskScore >= 70) {
+        const codeHash = crypto.createHash('sha256').update(sourceCode).digest('hex').slice(0, 8);
+        writeThreatToChain({
+          type: 'SCAN',
+          sev: result.riskScore >= 80 ? 'C' : 'H',
+          cat: categories[0] || 'unknown',
+          score: result.riskScore,
+          hash: codeHash,
+          ts: Math.floor(Date.now() / 1000),
+        }).catch(() => {}); // Fire and forget
+      }
     }
 
     return res.json(result);
