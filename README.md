@@ -1,5 +1,12 @@
 # 🛡️ AgentShield
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lobsec-security/agentshield/releases)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/lobsec-security/agentshield/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue.svg)](https://www.typescriptlang.org/)
+[![Solana](https://img.shields.io/badge/Solana-web3.js-9945FF.svg)](https://solana.com/)
+[![Express](https://img.shields.io/badge/Express-4.x-lightgrey.svg)](https://expressjs.com/)
+
 **Solana Agent Security API** — Runtime protection for AI agents on Solana.
 
 Built for the [Colosseum Agent Hackathon](https://colosseum.com) by LobSec.
